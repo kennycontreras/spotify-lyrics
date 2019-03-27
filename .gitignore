@@ -1,6 +1,8 @@
 # Don't track content of these folders
 config/
 
+# Don't track these files
+.cache-StriderKeni
 
 
 
