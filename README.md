@@ -1,3 +1,15 @@
-# spotify-lyrics
+# Spotify Lyrics
 
-A mini app that allows you to get your current playing song on Spotify and shows you the lyrics of that song without the need of searching on websites.
+This app shows the lyrics of your current song on Spotify with the help of Spotify API and some webscrapping.
+If you're tired searching your lyrics on websites, This app will simplify this task.
+
+# Pre-requisites
+
+This is the list of libraries you need to install to make Spotify-Lyrics works
+
+* Spotipy
+* Beautifulsoup
+* Request
+
+
+
