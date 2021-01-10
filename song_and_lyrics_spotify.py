@@ -12,7 +12,6 @@ scope = 'user-read-currently-playing'
 token = spotipy.util.prompt_for_user_token(
     USERNAME, scope, client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET, redirect_uri=SPOTIPY_REDIRECT_URI)
 
-
 def sing():
 
     if token:
@@ -22,11 +21,6 @@ def sing():
         # method currently playing return an actual song on Spotify
         current_song = sp.currently_playing()
 
-        # Extract total track duration from json response
-        track_duration = current_song['item']['duration_ms']
-        # Extract current progress from json response
-        track_progress = current_song['progress_ms']
-        
         # Extract artist from json response
         artist = current_song['item']['artists'][0]['name']
         # Extract song name from json response
@@ -39,50 +33,66 @@ def sing():
         print('\nSong: {}\nArtist: {}'.format(song_name, artist))
 
     else:
-        print("Can't get token for", username)
+        print("Can't get token for")
 
-    return (song_url , (track_duration - track_progress) / 1000)
+    return (song_url , (current_song['item']['duration_ms'] - current_song['progress_ms']) / 1000)
 
 
 def notation(raw_song_name):
-    song_notations = raw_song_name
+
+    song_notations = []
+    
+    # needed for a proper url extention
 
     # make & 'and'
-    # make ' fill in the gap
-    # make --- slice of the rest
-    # make 'live' slice of the rest
-    # make 'remastered' slice of the rest
-    # make 'extended' slice of the rest
+    raw_song_name.replace('&' , 'and')
+
+    # make ' fill in the gap ----------------------------------------------------------------------- # FIXME: not working can't remove the single quote
+    raw_song_name.replace("'" , "")
+    song_notations.append(raw_song_name)
+
+    # make '---'  slice of what is left
+    dashindexs = raw_song_name.find('---')
+    song_notations.append(raw_song_name[:dashindexs + 1])
 
     return song_notations
 
 
-def lyricsrequest(raw_name):
+def lyricsrequest(raw_names):
     
-    printed = False
-
-    # try different enginges so you dont get blacklisted and propably different urls request is not bad idea
+    # try different servers so you dont get blacklisted
     search_places = ['genius.com']
 
-    for server in search_places:
-        # New request using song_url created before
-        print(f"\nLooked on {server} with: https://{server}/{raw_name}")
-        request = requests.get(f"https://{server}/{raw_name}")
+    for raw_name in raw_names:
+        for server in search_places:
+            # New request using song_url created before
+            print(f"\nServer request: https://{server}/{raw_name}")
+            request = requests.get(f"https://{server}/{raw_name}")
 
-        # Verify status_code of request
-        if request.status_code == 200:
+            # Verify status_code of request
+            if request.status_code == 200:
+                
+                # BeautifulSoup library return an html code
+                html_code = BeautifulSoup(request.text, features="html.parser")
 
-            # BeautifulSoup library return an html code
-            html_code = BeautifulSoup(request.text, features="html.parser")
-            # Extract lyrics from beautifulsoup response using the correct prefix {"class": "lyrics"}
-            lyrics = html_code.find("div", {"class": "lyrics"}).get_text()
-            print(lyrics)
-            printed = True
+                # fail safe
+                if html_code.find("div", {"class": "lyrics"}) is None:
+                    print('--------------------------------------making a new request because was redirected----------------------------------------------------')
+                    time.sleep(2)
+                    lyricsrequest([raw_name])
+                    return False
 
-        if printed:
-            break
-        else:
-            print("Sorry, I can't find the actual lyrics on this request")
+                # Extract lyrics from beautifulsoup response using the correct prefix {"class": "lyrics"}
+                lyrics = html_code.find("div", {"class": "lyrics"}).get_text()
+
+                print(lyrics)
+                print(f'Lyrics found on {server} with a search on {raw_name}')
+
+                return True
+
+            else:
+                print("Sorry, I can't find the actual lyrics on this request")
+    return False
 
 if __name__ == "__main__":
     while True:
